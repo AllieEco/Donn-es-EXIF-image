@@ -17,6 +17,10 @@ def print_exif_json(image_path: str) -> None:
         tag_name = tag_map.get(tag_id, str(tag_id))
         exif_data[tag_name] = _json_safe_exif_value(value)
 
+    software = exif_data.get("Software")
+    if isinstance(software, str) and software.strip():
+        print(f"Info: logiciel de retouche detecte (Software='{software}').")
+
     print(json.dumps(exif_data, ensure_ascii=False, indent=2))
 
 

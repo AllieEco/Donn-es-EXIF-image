@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import unicodedata
 from PIL import Image, ExifTags
 
 
@@ -9,6 +10,13 @@ def print_exif_json(image_path: str) -> None:
     with Image.open(image_path) as image:
         exif = image.getexif()
         image_info = dict(image.info)
+        image_format = (image.format or "").lower()
+
+    if image_format == "png":
+        print("⚠️ Probable retouche detecte : Fichier de type PNG. ⚠️")
+
+    if _is_probable_screenshot(image_path):
+        print("⚠️ Probable capture d'ecran (nom de fichier). ⚠️")
 
     if not exif:
         print("{}")
@@ -35,9 +43,6 @@ def print_exif_json(image_path: str) -> None:
         xmp_tool = _extract_xmp_software(image_info)
         if xmp_tool:
             print(f"⚠️ Info: logiciel de retouche detecte (XMP='{xmp_tool}'). ⚠️")
-
-    if _is_probable_screenshot(image_path):
-        print("⚠️ Probable capture d'ecran (nom de fichier). ⚠️")
 
     print(json.dumps(exif_data, ensure_ascii=False, indent=2))
 
@@ -84,7 +89,8 @@ def _extract_xmp_software(image_info: dict) -> str | None:
 
 
 def _is_probable_screenshot(image_path: str) -> bool:
-    filename = os.path.basename(image_path).lower()
+    normalized_path = unicodedata.normalize("NFKC", image_path).casefold()
+    filename = unicodedata.normalize("NFKC", os.path.basename(image_path)).casefold()
     keywords = (
         "screen-shot",
         "screenshot",
@@ -93,6 +99,5 @@ def _is_probable_screenshot(image_path: str) -> bool:
         "capture d'écran",
         "capture d’écran",
         "capture ecran",
-        "captured ecran",
     )
-    return any(keyword in filename for keyword in keywords)
+    return any(keyword in filename or keyword in normalized_path for keyword in keywords)

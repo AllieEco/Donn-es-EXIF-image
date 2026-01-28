@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from PIL import Image, ExifTags
 
@@ -22,16 +23,21 @@ def print_exif_json(image_path: str) -> None:
     software = exif_data.get("Software")
     processing_software = exif_data.get("ProcessingSoftware")
     if isinstance(software, str) and software.strip():
-        print(f"Info: logiciel de retouche detecte (Software='{software}').")
+        print(
+            f"⚠️ Info: logiciel de retouche detecte (Software='{software}'). ⚠️"
+        )
     elif isinstance(processing_software, str) and processing_software.strip():
         print(
-            "Info: logiciel de retouche detecte "
-            f"(ProcessingSoftware='{processing_software}')."
+            "⚠️ Info: logiciel de retouche detecte "
+            f"(ProcessingSoftware='{processing_software}'). ⚠️"
         )
     else:
         xmp_tool = _extract_xmp_software(image_info)
         if xmp_tool:
-            print(f"Info: logiciel de retouche detecte (XMP='{xmp_tool}').")
+            print(f"⚠️ Info: logiciel de retouche detecte (XMP='{xmp_tool}'). ⚠️")
+
+    if _is_probable_screenshot(image_path):
+        print("⚠️ Probable capture d'ecran (nom de fichier). ⚠️")
 
     print(json.dumps(exif_data, ensure_ascii=False, indent=2))
 
@@ -75,3 +81,18 @@ def _extract_xmp_software(image_info: dict) -> str | None:
             if value:
                 return value
     return None
+
+
+def _is_probable_screenshot(image_path: str) -> bool:
+    filename = os.path.basename(image_path).lower()
+    keywords = (
+        "screen-shot",
+        "screenshot",
+        "capture d'ecran",
+        "capture d’ecran",
+        "capture d'écran",
+        "capture d’écran",
+        "capture ecran",
+        "captured ecran",
+    )
+    return any(keyword in filename for keyword in keywords)
